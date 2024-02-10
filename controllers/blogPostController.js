@@ -2,11 +2,11 @@ const Post = require('../models/blogpost');
 
 exports.getPosts = async (req, res) => {
   try {
-    
+    const filter = { user: req.user.id };
     if (req.query.device) {
       filter.device = req.query.device.toUpperCase();
     }
-    const posts = await Post.find({user:"9384932"});
+    const posts = await Post.find(filter);
     res.json(posts);
   } catch (error) {
     console.error(error.message);
@@ -22,6 +22,7 @@ exports.addPost = async (req, res) => {
       title,
       body,
       device,
+      user: req.user.id,
     });
 
     await newPost.save();
@@ -37,12 +38,11 @@ exports.updatePost = async (req, res) => {
   try {
     let post = await Post.findByIdAndUpdate(req.params.id, req.body);
 
-    if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
+    if (post.user.toString() !== req.user.id) {
+      return res.status(401).json({ message: 'User not authorized' });
     }
 
-
-    res.json(post);
+    res.json({message: 'Post updated successfully'});
   } catch (error) {
     console.error(error.message);
     res.status(500).send('Server Error');
@@ -53,8 +53,8 @@ exports.deletePost = async (req, res) => {
   try {
     let post = await Post.findByIdAndDelete(req.params.id);
 
-    if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
+    if (post.user.toString() !== req.user.id) {
+      return res.status(401).json({ message: 'User not authorized' });
     }
 
     res.json({ message: 'Post removed' });
